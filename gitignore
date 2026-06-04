@@ -1,0 +1,25 @@
+# Environment
+.env
+.env.local
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Vector store (auto-generated, can be large)
+chroma_pdftesting_db/
+
+# Temp uploaded files
+temp_*.pdf
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

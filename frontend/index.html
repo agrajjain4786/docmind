@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DocMind — PDF Intelligence</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Background grid -->
+    <div class="bg-grid"></div>
+    <div class="bg-orb orb1"></div>
+    <div class="bg-orb orb2"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">⬡</span>
+          <span class="logo-text">DocMind</span>
+        </div>
+        <button
+          class="sidebar-toggle"
+          id="sidebarToggle"
+          title="Toggle sidebar"
+        >
+          &#9776;
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="section-label">Active Document</p>
+        <div class="doc-card active" id="activeDoc">
+          <span class="doc-icon">📄</span>
+          <div class="doc-info">
+            <span class="doc-name">No document loaded</span>
+            <span class="doc-meta">Upload a PDF to begin</span>
+          </div>
+          <span class="doc-status"></span>
+        </div>
+        <button class="delete-doc-btn" id="deleteDocBtn" style="display: none">
+          🗑 Remove document
+        </button>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="section-label">Upload PDF</p>
+        <label class="upload-zone" id="uploadZone" for="fileInput">
+          <span class="upload-icon">⬆</span>
+          <span class="upload-text"
+            >Drop PDF here<br /><small>or click to browse</small></span
+          >
+          <input type="file" id="fileInput" accept=".pdf" hidden />
+        </label>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="section-label">Chat History</p>
+        <div class="history-list" id="historyList">
+          <p class="empty-history">No conversations yet.</p>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="model-tag">
+          <span class="pulse-dot"></span>
+          mistral-small-2506
+        </div>
+        <button class="clear-btn" id="clearBtn">Clear Chat</button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="main" id="main">
+      <header class="topbar">
+        <button class="menu-btn" id="menuBtn">&#9776;</button>
+        <div class="topbar-title">
+          <span>Ask your document anything</span>
+          <span class="topbar-sub">Powered by RAG + Mistral</span>
+        </div>
+        <div class="topbar-status" id="topbarStatus">
+          <span class="status-dot idle"></span>
+          <span class="status-text">Idle</span>
+        </div>
+      </header>
+
+      <!-- Chat messages -->
+      <section class="chat-window" id="chatWindow">
+        <div class="welcome-screen" id="welcomeScreen">
+          <div class="welcome-icon">⬡</div>
+          <h1 class="welcome-title">DocMind</h1>
+          <p class="welcome-sub">
+            Upload a PDF and interrogate its contents with AI.<br />Every answer
+            is grounded in your document.
+          </p>
+          <div class="feature-pills">
+            <span class="pill">📎 PDF Parsing</span>
+            <span class="pill">🔍 MMR Retrieval</span>
+            <span class="pill">🧠 Mistral LLM</span>
+            <span class="pill">💬 Context-aware</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Input Area -->
+      <footer class="input-area">
+        <div class="input-wrapper">
+          <div class="context-chips" id="contextChips"></div>
+          <div class="input-row">
+            <textarea
+              id="queryInput"
+              class="query-input"
+              placeholder="Ask a question about your document…"
+              rows="1"
+              spellcheck="false"
+            ></textarea>
+            <button class="send-btn" id="sendBtn" title="Send">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </div>
+          <p class="input-hint">
+            Press <kbd>Enter</kbd> to send &nbsp;·&nbsp;
+            <kbd>Shift+Enter</kbd> for new line
+          </p>
+        </div>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
