@@ -115,6 +115,7 @@ async function handleUpload(file) {
     sendBtn.disabled = false;
     showToast(`"${file.name}" loaded successfully!`, "success");
     addContextChip(file.name);
+    deleteDocBtn.style.display = "block"; // ← ADD THIS LINE
 
   } catch (err) {
     setStatus("error", "Error");
