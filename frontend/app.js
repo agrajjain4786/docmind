@@ -1,9 +1,8 @@
 /* ============================================================
    DocMind — app.js
-   Connects the UI to the Python RAG backend via fetch().
    ============================================================ */
 
-const API_BASE = ""; // ← empty = same origin (works on Render, Railway, etc.)
+const API_BASE = ""; // relative URL — works on Render
 
 /* ── DOM refs ─────────────────────────────────────────── */
 const chatWindow    = document.getElementById("chatWindow");
@@ -22,11 +21,15 @@ const statusText    = topbarStatus.querySelector(".status-text");
 const sidebar       = document.getElementById("sidebar");
 const sidebarToggle = document.getElementById("sidebarToggle");
 const menuBtn       = document.getElementById("menuBtn");
+const deleteDocBtn  = document.getElementById("deleteDocBtn");
 
 /* ── State ────────────────────────────────────────────── */
 let chatHistory  = [];
 let loadedDoc    = null;
 let isProcessing = false;
+
+/* ── Init: make sure delete btn is hidden at start ───── */
+deleteDocBtn.style.display = "none";
 
 /* ── Status helper ────────────────────────────────────── */
 function setStatus(state, label) {
@@ -50,7 +53,7 @@ function showToast(msg, type = "info") {
 /* ── Sidebar toggle ───────────────────────────────────── */
 sidebarToggle.addEventListener("click", () => {
   sidebar.classList.toggle("collapsed");
-  sidebar.classList.toggle("open"); // mobile
+  sidebar.classList.toggle("open");
 });
 menuBtn.addEventListener("click", () => {
   sidebar.classList.toggle("open");
@@ -91,6 +94,7 @@ fileInput.addEventListener("change", () => {
 async function handleUpload(file) {
   loadedDoc = null;
   updateDocCard(null);
+  deleteDocBtn.style.display = "none"; // hide while uploading
   setStatus("loading", "Uploading…");
   sendBtn.disabled = true;
 
@@ -108,19 +112,22 @@ async function handleUpload(file) {
       throw new Error(err.detail || "Upload failed");
     }
 
-    const data = await res.json();
+    await res.json();
     loadedDoc = file.name;
     updateDocCard(file.name);
     setStatus("done", "Ready");
     sendBtn.disabled = false;
     showToast(`"${file.name}" loaded successfully!`, "success");
     addContextChip(file.name);
-    deleteDocBtn.style.display = "block"; // ← ADD THIS LINE
+
+    // ✅ Show the delete button after successful upload
+    deleteDocBtn.style.display = "block";
 
   } catch (err) {
     setStatus("error", "Error");
     showToast(err.message, "error");
     sendBtn.disabled = false;
+    deleteDocBtn.style.display = "none";
   }
 }
 
@@ -151,21 +158,17 @@ async function handleSend() {
   const query = queryInput.value.trim();
   if (!query || isProcessing) return;
 
-  // Hide welcome screen on first message
   if (welcomeScreen) welcomeScreen.style.display = "none";
 
-  // Append user bubble
   appendMessage("user", query);
   addToHistory(query);
 
-  // Clear input
   queryInput.value = "";
   queryInput.style.height = "auto";
   isProcessing = true;
   sendBtn.disabled = true;
   setStatus("loading", "Thinking…");
 
-  // Typing indicator
   const typingEl = appendTyping();
 
   try {
@@ -182,7 +185,6 @@ async function handleSend() {
 
     const data = await res.json();
     typingEl.remove();
-
     appendMessage("ai", data.answer, data.sources || []);
     setStatus("done", "Done");
 
@@ -208,7 +210,6 @@ function appendMessage(role, text, sources = [], isError = false) {
 
   const bubble = document.createElement("div");
   bubble.className = "bubble" + (isError ? " error-bubble" : "");
-
   bubble.innerHTML = formatText(text);
 
   if (sources.length > 0) {
@@ -289,8 +290,7 @@ clearBtn.addEventListener("click", () => {
   showToast("Chat cleared.", "info");
 });
 
-const deleteDocBtn = document.getElementById("deleteDocBtn");
-
+/* ── Delete document ──────────────────────────────────── */
 deleteDocBtn.addEventListener("click", async () => {
   if (!loadedDoc) return;
   if (!confirm(`Remove "${loadedDoc}" and clear all its data?`)) return;
@@ -302,10 +302,9 @@ deleteDocBtn.addEventListener("click", async () => {
     loadedDoc = null;
     updateDocCard(null);
     contextChips.innerHTML = "";
-    deleteDocBtn.style.display = "none";
+    deleteDocBtn.style.display = "none"; // ✅ hide after deletion
     setStatus("idle", "Idle");
     showToast("Document removed successfully.", "success");
-    deleteDocBtn.style.display = "block";
 
   } catch (err) {
     showToast(err.message, "error");
