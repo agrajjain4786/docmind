@@ -1,10 +1,9 @@
 /* ============================================================
    DocMind — app.js
    Connects the UI to the Python RAG backend via fetch().
-   Change API_BASE to match your FastAPI / Flask server URL.
    ============================================================ */
 
-const API_BASE = "http://localhost:8000"; // ← update to your backend URL
+const API_BASE = ""; // ← empty = same origin (works on Render, Railway, etc.)
 
 /* ── DOM refs ─────────────────────────────────────────── */
 const chatWindow    = document.getElementById("chatWindow");
@@ -209,10 +208,8 @@ function appendMessage(role, text, sources = [], isError = false) {
   const bubble = document.createElement("div");
   bubble.className = "bubble" + (isError ? " error-bubble" : "");
 
-  // Simple markdown-ish: bold, inline code
   bubble.innerHTML = formatText(text);
 
-  // Source chips
   if (sources.length > 0) {
     const sc = document.createElement("div");
     sc.className = "source-chips";
@@ -290,6 +287,7 @@ clearBtn.addEventListener("click", () => {
   setStatus("idle", "Idle");
   showToast("Chat cleared.", "info");
 });
+
 const deleteDocBtn = document.getElementById("deleteDocBtn");
 
 deleteDocBtn.addEventListener("click", async () => {
@@ -312,52 +310,7 @@ deleteDocBtn.addEventListener("click", async () => {
     showToast(err.message, "error");
   }
 });
+
 /* ── Init ─────────────────────────────────────────────── */
 setStatus("idle", "Idle");
 queryInput.focus();
-
-/*
-  ─────────────────────────────────────────────────────────
-  BACKEND INTEGRATION GUIDE
-  ─────────────────────────────────────────────────────────
-
-  This UI expects two REST endpoints on your Python server:
-
-  1. POST /upload
-     Body: multipart/form-data  { file: <PDF> }
-     Response: { "message": "ok" }
-
-  2. POST /ask
-     Body: application/json  { "question": "..." }
-     Response: {
-       "answer": "...",
-       "sources": ["chunk title or page ref", ...]   // optional
-     }
-
-  Minimal FastAPI wrapper example:
-
-  from fastapi import FastAPI, UploadFile, File
-  from fastapi.middleware.cors import CORSMiddleware
-  from pydantic import BaseModel
-
-  app = FastAPI()
-  app.add_middleware(CORSMiddleware, allow_origins=["*"],
-      allow_methods=["*"], allow_headers=["*"])
-
-  class Question(BaseModel):
-      question: str
-
-  @app.post("/upload")
-  async def upload(file: UploadFile = File(...)):
-      # save, chunk, embed into Chroma here
-      return {"message": "ok"}
-
-  @app.post("/ask")
-  async def ask(q: Question):
-      docs = retriever.invoke(q.question)
-      context = "\n\n".join(d.page_content for d in docs)
-      final = prompt.invoke({"context": context, "question": q.question})
-      response = llm.invoke(final)
-      return {"answer": response.content, "sources": []}
-  ─────────────────────────────────────────────────────────
-*/
