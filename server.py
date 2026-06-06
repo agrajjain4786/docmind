@@ -1,6 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from langchain_mistralai import MistralAIEmbeddings, ChatMistralAI
@@ -11,9 +12,15 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import shutil, os
 
 load_dotenv()
+
 app = FastAPI()
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 embedding_model = MistralAIEmbeddings()
 llm = ChatMistralAI(model="mistral-small-2506")
@@ -31,27 +38,35 @@ retriever = None
 class Question(BaseModel):
     question: str
 
+# ── API routes FIRST ──────────────────────────────────────────────────────────
+
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
     global vectorstore, retriever
 
-    # Save uploaded PDF temporarily
-    path = f"temp_{file.filename}"
+    # FIX 2: Use /tmp/ for safe writable temp storage on Render
+    path = f"/tmp/temp_{file.filename}"
     with open(path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # Load & chunk
     loader = PyPDFLoader(path)
     docs = loader.load()
     splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
     chunks = splitter.split_documents(docs)
 
-    # Embed into Chroma
-    vectorstore = Chroma.from_documents(chunks, embedding_model, persist_directory="chroma_pdftesting_db")
-    retriever = vectorstore.as_retriever(search_type="mmr", search_kwargs={"k": 4, "fetch_k": 10, "lambda_mult": 0.5})
+    vectorstore = Chroma.from_documents(
+        chunks,
+        embedding_model,
+        persist_directory="/tmp/chroma_pdftesting_db"  # writable on Render
+    )
+    retriever = vectorstore.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": 4, "fetch_k": 10, "lambda_mult": 0.5}
+    )
 
     os.remove(path)
     return {"message": "ok"}
+
 
 @app.post("/ask")
 async def ask(q: Question):
@@ -64,19 +79,29 @@ async def ask(q: Question):
     response = llm.invoke(final)
     return {"answer": response.content, "sources": []}
 
-# Serve the frontend HTML/CSS/JS files
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 @app.delete("/document")
 async def delete_document():
     global vectorstore, retriever
-
     if vectorstore is None:
         return {"message": "No document loaded."}
-
-    # Clear all data from Chroma
     vectorstore.delete_collection()
     vectorstore = None
     retriever = None
-
     return {"message": "deleted"}
+
+
+# ── FIX 1: Serve frontend LAST so API routes are not intercepted ──────────────
+# Serve individual frontend files explicitly
+@app.get("/style.css")
+async def serve_css():
+    return FileResponse("frontend/style.css", media_type="text/css")
+
+@app.get("/app.js")
+async def serve_js():
+    return FileResponse("frontend/app.js", media_type="application/javascript")
+
+# Catch-all — serve index.html for the root and any unknown GET routes
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    return FileResponse("frontend/index.html")
