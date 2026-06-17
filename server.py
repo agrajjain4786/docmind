@@ -48,6 +48,10 @@ class Question(BaseModel):
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...), session_id: str = Depends(require_session_id)):
+    existing = sessions.get(session_id)
+    if existing:
+        existing["vectorstore"].delete_collection()
+        del sessions[session_id]
     path = f"/tmp/temp_{session_id}_{file.filename}"
     with open(path, "wb") as f:
         shutil.copyfileobj(file.file, f)
