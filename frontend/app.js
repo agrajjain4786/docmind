@@ -4,6 +4,17 @@
 
 const API_BASE = ""; // relative URL — works on Render
 
+/* ── Session ID: keeps every browser's documents separate ───── */
+function getSessionId() {
+  let id = localStorage.getItem("docmind_session_id");
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem("docmind_session_id", id);
+  }
+  return id;
+}
+const SESSION_ID = getSessionId();
+
 /* ── DOM refs ─────────────────────────────────────────── */
 const chatWindow    = document.getElementById("chatWindow");
 const welcomeScreen = document.getElementById("welcomeScreen");
@@ -104,6 +115,7 @@ async function handleUpload(file) {
   try {
     const res = await fetch(`${API_BASE}/upload`, {
       method: "POST",
+      headers: { "X-Session-Id": SESSION_ID },
       body: formData,
     });
 
@@ -174,7 +186,7 @@ async function handleSend() {
   try {
     const res = await fetch(`${API_BASE}/ask`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Session-Id": SESSION_ID },
       body: JSON.stringify({ question: query }),
     });
 
@@ -296,7 +308,10 @@ deleteDocBtn.addEventListener("click", async () => {
   if (!confirm(`Remove "${loadedDoc}" and clear all its data?`)) return;
 
   try {
-    const res = await fetch(`${API_BASE}/document`, { method: "DELETE" });
+    const res = await fetch(`${API_BASE}/document`, {
+      method: "DELETE",
+      headers: { "X-Session-Id": SESSION_ID },
+    });
     if (!res.ok) throw new Error("Failed to delete");
 
     loadedDoc = null;
